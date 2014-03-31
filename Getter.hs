@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, KindSignatures, PackageImports #-}
+{-# LANGUAGE RankNTypes, KindSignatures, PackageImports, ScopedTypeVariables #-}
 
 module Getter (getter) where
 
@@ -15,15 +15,15 @@ import qualified Data.ByteString.Lazy as L
 import "crypto-random" Crypto.Random
 
 import Data.Conduit (
-	ConduitM, runResourceT,
-	yield, await, leftover, ($$), ($$+), ($$++))
+	ConduitM, ResumableSource, Sink,
+	runResourceT, yield, await, leftover, ($$), ($$+), ($$++))
 import Data.Conduit.List (peek, mapM_)
 import Data.Conduit.Binary (sourceFileRange)
 import Data.Conduit.Network (sourceSocket, sinkSocket)
 
 import Network.Socket (Socket, SockAddr, accept, sClose)
 import Network.TLS (
-	Params, TLSParams,
+	Params,
 	Backend(Backend, backendSend, backendRecv, backendFlush, backendClose),
 	contextNew, handshake, sendData, recvData, bye)
 import Network.Wai.Handler.Warp (
@@ -35,22 +35,16 @@ import Network.Wai.Handler.Warp (
 getter :: Params -> Socket -> IO (Connection, SockAddr)
 getter params sock = do
 	(s, sa) <- accept sock
-	handle (retry s params sock) $ do
+	handle (\(_ :: SomeException) -> sClose s >> getter params sock) $ do
 		(fromClient, firstBS) <- sourceSocket s $$+ peek
-		let toClient = sinkSocket s
 		ifromClient <- newIORef fromClient
-		let getNext sink = do
-			fromClient' <- readIORef ifromClient
-			(fromClient'', bs) <- fromClient' $$++ sink
-			writeIORef ifromClient fromClient''
-			return bs
 		if maybe False ((== 0x16) . fst) (firstBS >>= B.uncons)
 		then do	gen <- cprgCreate <$> createEntropyPool
 			ctx <- contextNew Backend {
 				backendFlush = return (),
 				backendClose = return (),
-				backendSend = \bs -> yield bs $$ toClient,
-				backendRecv = getNext . takeMost
+				backendSend = \bs -> yield bs $$ mkToClient s,
+				backendRecv = getNext ifromClient . takeMost
 			 } params (gen :: SystemRNG)
 			handshake ctx
 			let conn = Connection {
@@ -64,16 +58,20 @@ getter params sock = do
 			 }
 			return (conn, sa)
 		else do	let conn = (socketConnection s) {
-				connRecv = getNext $
+				connRecv = getNext ifromClient $
 					fmap (fromMaybe B.empty) await
 			 }
 			return (conn, sa)
 
-retry :: Socket -> TLSParams -> Socket -> SomeException ->
-	IO (Connection, SockAddr)
-retry s a b _ = sClose s >> getter a b
+getNext :: IORef (ResumableSource IO a) -> Sink a IO b -> IO b
+getNext ifromClient sink = do
+	fromClient <- readIORef ifromClient
+	(fromClient', bs) <- fromClient $$++ sink
+	writeIORef ifromClient fromClient'
+	return bs
 
-takeMost :: forall (m :: * -> *) o . Monad m => Int -> ConduitM B.ByteString o m B.ByteString
+takeMost :: forall (m :: * -> *) o . Monad m =>
+	Int -> ConduitM B.ByteString o m B.ByteString
 takeMost i = await >>= maybe (return B.empty) go
 	where
 	go bs = do
@@ -81,3 +79,6 @@ takeMost i = await >>= maybe (return B.empty) go
 		return x
 		where
 		(x, y) = B.splitAt i bs
+
+mkToClient :: Socket -> ConduitM B.ByteString o IO ()
+mkToClient = sinkSocket
