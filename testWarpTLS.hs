@@ -1,7 +1,6 @@
 {-# LANGUAGE PackageImports, OverloadedStrings, RankNTypes, KindSignatures #-}
 
-import Params (getParams)
-import Getter (getter)
+import TLSSocket (runTLSSocket)
 
 import Data.Char
 import Control.Applicative
@@ -14,8 +13,7 @@ import Data.Conduit.Network (bindPort)
 import Network.Socket (sClose)
 import Network.HTTP.Types.Status (status200)
 import Network.Wai (Response, responseLBS)
-import Network.Wai.Handler.Warp (
-	HostPreference(HostAny), runSettingsConnection, defaultSettings)
+import Network.Wai.Handler.Warp (HostPreference(HostAny), defaultSettings)
 
 main :: IO ()
 main = do
@@ -26,11 +24,10 @@ main = do
 			<$> readFile "crt.path"
 			<*> readFile "key.path"
 		_ -> error "wrong argument number"
-	bracket (bindPort 3000 HostAny) sClose $ \sock -> do
-		params <- getParams crt key
-		runSettingsConnection defaultSettings (getter params sock) app
+	bracket (bindPort 3000 HostAny) sClose $ \sock ->
+		runTLSSocket crt key defaultSettings sock pong
 		
-app :: MonadTrans t => a -> t IO Response
-app _ = lift $ do
+pong :: MonadTrans t => a -> t IO Response
+pong _ = lift $ do
 	print ("hello" :: String)
 	return $ responseLBS status200 [("Content-Type", "text/plain")] "PONG"
