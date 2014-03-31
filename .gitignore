@@ -1,2 +1,4 @@
-/crt.path
-/key.path
+/prev/crt.path
+/prev/key.path
+/next/crt.path
+/next/key.path
