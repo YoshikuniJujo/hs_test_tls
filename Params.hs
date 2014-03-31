@@ -2,14 +2,19 @@ module Params (getParams) where
 
 import Control.Applicative
 import Data.Either
-import Data.PEM
-import Data.Certificate.X509
-import Data.Certificate.KeyRSA
-import Network.TLS
-import Network.TLS.Extra
-
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString as B
+
+import Data.PEM (PEM, pemParseBS, pemName, pemContent)
+import Data.Certificate.X509 (X509, decodeCertificate)
+import Data.Certificate.KeyRSA (decodePrivate)
+import Network.TLS (
+	Params(pCiphers, pCertificates, pAllowedVersions), defaultParamsServer,
+	ServerParams(serverWantClientCert), updateServerParams,
+	Version(SSL3, TLS10, TLS11, TLS12), PrivateKey(PrivRSA), Cipher)
+import Network.TLS.Extra (
+	cipher_AES128_SHA1, cipher_AES256_SHA1,
+	cipher_RC4_128_MD5, cipher_RC4_128_SHA1)
 
 getParams :: FilePath -> FilePath -> IO Params
 getParams cf kf = do
