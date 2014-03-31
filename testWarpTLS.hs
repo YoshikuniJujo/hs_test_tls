@@ -3,8 +3,11 @@
 import Params (getParams)
 import Getter (getter)
 
+import Data.Char
+import Control.Applicative
 import "monads-tf" Control.Monad.Trans
 import Control.Exception
+import System.Environment
 
 import Data.Conduit.Network (bindPort)
 
@@ -14,14 +17,18 @@ import Network.Wai (Response, responseLBS)
 import Network.Wai.Handler.Warp (
 	HostPreference(HostAny), runSettingsConnection, defaultSettings)
 
-crt, key :: String
-crt = "/home/tatsuya/ssl/csr/2013crt_cross_owl_skami2.pem"
-key = "/home/tatsuya/ssl/csr/mydomain.key"
-
 main :: IO ()
-main = bracket (bindPort 3000 HostAny) sClose $ \sock -> do
-	params <- getParams crt key
-	runSettingsConnection defaultSettings (getter params sock) app
+main = do
+	args <- getArgs
+	[crt, key] <- case args of
+		[_, _] -> return args
+		[] -> (\c k -> map (takeWhile $ not . isSpace) [c, k])
+			<$> readFile "crt.path"
+			<*> readFile "key.path"
+		_ -> error "wrong argument number"
+	bracket (bindPort 3000 HostAny) sClose $ \sock -> do
+		params <- getParams crt key
+		runSettingsConnection defaultSettings (getter params sock) app
 		
 app :: MonadTrans t => a -> t IO Response
 app _ = lift $ do
