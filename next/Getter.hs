@@ -4,6 +4,11 @@ module Getter (getter) where
 
 import Prelude hiding (mapM_)
 
+import TLS (
+	Params,
+	Backend(Backend, backendSend, backendRecv, backendFlush, backendClose),
+	contextNew, handshake, sendData, recvData, bye)
+
 import Data.Maybe
 import Data.IORef
 import Control.Applicative
@@ -22,10 +27,6 @@ import Data.Conduit.Binary (sourceFileRange)
 import Data.Conduit.Network (sourceSocket, sinkSocket)
 
 import Network.Socket (Socket, SockAddr, accept, sClose)
-import Network.TLS (
-	Params,
-	Backend(Backend, backendSend, backendRecv, backendFlush, backendClose),
-	contextNew, handshake, sendData, recvData, bye)
 import Network.Wai.Handler.Warp (
 	Connection(
 		Connection, connSendMany, connSendAll, connSendFile,

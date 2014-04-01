@@ -4,7 +4,6 @@ import TLSSocket (runTLSSocket)
 
 import Data.Char
 import Control.Applicative
-import "monads-tf" Control.Monad.Trans
 import Control.Exception
 import System.Environment
 
