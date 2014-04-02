@@ -1,10 +1,10 @@
 {-# LANGUAGE RankNTypes, KindSignatures, PackageImports, ScopedTypeVariables #-}
 
-module Getter (getter) where
+module Network.Wai.Handler.WarpTLS.Getter (getter) where
 
 import Prelude hiding (mapM_)
 
-import TLS (
+import Network.Wai.Handler.WarpTLS.TLS (
 	Params,
 	Backend(Backend, backendSend, backendRecv, backendFlush, backendClose),
 	contextNew, handshake, sendData, recvData, bye)

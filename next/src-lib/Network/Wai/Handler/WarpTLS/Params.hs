@@ -1,10 +1,9 @@
-module Params (makeParams) where
+module Network.Wai.Handler.WarpTLS.Params (makeParams) where
 
-import TLS (
+import Network.Wai.Handler.WarpTLS.TLS (
 	Params(pCiphers, pCertificates, pAllowedVersions), defaultParamsServer,
 	ServerParams(serverWantClientCert), updateServerParams,
-	Version(SSL3, TLS10, TLS11, TLS12), PrivateKey(PrivRSA))
-import TLS (
+	Version(SSL3, TLS10, TLS11, TLS12), PrivateKey(PrivRSA),
 	cipher_AES128_SHA1, cipher_AES256_SHA1,
 	cipher_RC4_128_MD5, cipher_RC4_128_SHA1)
 
