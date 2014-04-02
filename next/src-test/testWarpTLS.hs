@@ -2,7 +2,7 @@
 
 import Data.Function (on)
 
-import Network.Wai.Handler.WarpTLS.UID (runTLSSocketWithID, tlsSettings)
+import Network.Wai.Handler.WarpTLS.UID (runTLSSocketWithID, tlsSettings, Group, User)
 -- import Network.Wai.Handler.WarpTLS (runTLSSocket, tlsSettings)
 
 import Data.Char
@@ -14,13 +14,13 @@ import Data.Conduit.Network (bindPort)
 
 import Network.Socket (sClose)
 import Network.HTTP.Types.Status (status200)
-import Network.Wai (Response, responseLBS, Application)
+import Network.Wai (responseLBS) -- (Response, responseLBS, Application)
 import Network.Wai.Handler.Warp (HostPreference(HostAny), defaultSettings)
 
 cutSpaces :: String -> String
 cutSpaces = takeWhile $ not . isSpace
 
-guid :: (String, String)
+guid :: (Group, User)
 guid = ("yesod", "yesod")
 
 main :: IO ()

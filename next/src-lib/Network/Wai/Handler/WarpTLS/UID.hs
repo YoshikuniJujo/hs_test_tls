@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 
-module Network.Wai.Handler.WarpTLS.UID (runTLSSocket, runTLSSocketWithID, tlsSettings) where
+module Network.Wai.Handler.WarpTLS.UID (runTLSSocket, runTLSSocketWithID, tlsSettings, Group, User) where
 
 import Network.Wai.Handler.WarpTLS.Params (makeParams)
 import Network.Wai.Handler.WarpTLS.Getter (getter)
@@ -25,8 +25,11 @@ runTLSSocket crt key set sock app = do
 	params <- makeParams <$> B.readFile crt <*> B.readFile key
 	runSettingsConnection set (getter params sock) app
 
+type Group = String
+type User = String
+
 runTLSSocketWithID :: TLSSettings -> Settings -> Socket ->
-	(String, String) -> Application -> IO ()
+	(Group, User) -> Application -> IO ()
 runTLSSocketWithID (TLSSettings crt key) set sock (gid, uid) app = do
 	!c <- B.readFile crt
 	!k <- B.readFile key
